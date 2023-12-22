@@ -1,0 +1,49 @@
+@font-face {
+    font-family: tektron;
+	src: url('fonts/tektron.ttf');
+}
+
+@font-face {
+    font-family: misa;
+    src: url('fonts/13_Misa.ttf');
+}
+
+body {
+    background-color: black;
+    font-family: Verdana; 
+    color: #59c6fe;
+    padding: 0px;
+    margin: 0px;
+}
+
+#html5logo {
+    margin: 2px 6px;   
+    width: 50px;
+    float: left;
+}
+
+#credits {
+    margin-top: 6px;
+    float: left;  
+    color: #315C89;
+    font-size: 0.7em;
+    width: 500px;
+}
+
+#credits a {
+    color: #315C89;
+}
+
+#like {
+    margin-left: 14px;
+    margin-top: 70px;
+    clear:both;
+}
+
+#hotkeys {
+    margin-top: 6px;
+    float: left;  
+    color: #315C89;
+    font-size: 0.7em;
+}
+
