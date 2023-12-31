@@ -1023,7 +1023,7 @@ function saveScore() {
     {
         putStorage('username', name);
         $.ajax({
-            type: "GET",
+            type: "POST",
             async: true,
             cache: false,
             data: {
