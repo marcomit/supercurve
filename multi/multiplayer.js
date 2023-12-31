@@ -49,7 +49,7 @@ function connect() {
             socket.close();
             
         game_state = STATE_MULTI_MESSAGE; game_message = "Connecting to server...";
-        socket = new WebSocket("ws://localhost:8080/");
+        socket = new WebSocket("wss://supercurve.fly.dev/");
         
         socket.onopen = function(){  
             state = true;

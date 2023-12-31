@@ -1,0 +1,28 @@
+# fly.toml app configuration file generated for supercurve-misty-leaf-7294 on 2023-12-31T14:13:08+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "supercurve"
+primary_region = "ams"
+kill_signal = "SIGINT"
+kill_timeout = "30s"
+
+[experimental]
+  auto_rollback = true
+
+[build]
+
+[processes]
+  ws = "node supercurve_server.js"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  processes = ["ws"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  cpus = 1
+  memory = "256mb"
+  processes = ["ws"]
