@@ -1,15 +1,28 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { Hono } from "hono";
 
-export default {
-	async fetch(request, env, ctx) {
-		return new Response('Hello World!');
-	},
-};
+const app = new Hono();
+
+app.get("/highscores", async (c) => {
+	const { results } = await c.env.DB.prepare(`select score, user, timestamp from highscores order by score desc LIMIT 0, 10`).all();
+	return c.json(results);
+});
+
+app.post("/highscores", async (c) => {
+	const { user, score } = await c.req.json();
+
+	if (!user || score == null) return c.status(422).text("Missing values");
+
+	const { success } = await c.env.DB.prepare(`insert into highscores (user, score, timestamp) values (?, ?, ?)`)
+		.bind(user, score, new Date().toISOString())
+		.run();
+
+	if (success) {
+		c.status(201);
+		return c.text("Created");
+	} else {
+		c.status(500);
+		return c.text("Something went wrong");
+	}
+});
+
+export default app;

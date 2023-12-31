@@ -1,11 +1,9 @@
 /*************************************
  *        SuperCurve Multi
  *              v1.0
- *     http://supercurve.sds.hu
  * 
  *      Created: Norbert Mereg
- *  E-mail: mereg.norbert@gmail.com
- * **********************************/
+s * **********************************/
 
 function load()
 {

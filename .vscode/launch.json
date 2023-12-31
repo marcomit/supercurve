@@ -12,6 +12,17 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}\\multi\\server\\supercurve_server.js"
+        },
+        {
+            "name": "Wrangler",
+            "type": "node",
+            "request": "attach",
+            "port": 9229,
+            "cwd": "/",
+            "resolveSourceMapLocations": null,
+            "attachExistingChildren": false,
+            "autoAttachChildProcesses": false,
+            "sourceMaps": true // works with or without this line
         }
     ]
 }

@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",
-    "start": "wrangler dev"
+    "start": "wrangler dev",
+		"db:setup": "wrangler d1 execute supercurve-highscores --file schema.sql"
   },
   "devDependencies": {
     "wrangler": "^3.0.0"
+  },
+  "dependencies": {
+    "hono": "^3.11.11"
   }
 }

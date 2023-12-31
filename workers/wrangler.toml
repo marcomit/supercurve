@@ -1,4 +1,4 @@
-name = "workers"
+name = "supercurve-highscores"
 main = "src/index.js"
 compatibility_date = "2023-12-18"
 
@@ -49,3 +49,8 @@ compatibility_date = "2023-12-18"
 # [[migrations]]
 # tag = "v1"
 # new_classes = ["MyDurableObject"]
+
+[[d1_databases]]
+binding = "DB" # i.e. available in your Worker on env.DB
+database_name = "supercurve-highscores"
+database_id = "97e43103-0024-46e4-bdf0-e7999863b273"
