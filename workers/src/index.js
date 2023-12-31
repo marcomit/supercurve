@@ -1,6 +1,8 @@
 import { Hono } from "hono";
+import { cors } from 'hono/cors';
 
 const app = new Hono();
+app.use('/*', cors());
 
 app.get("/highscores", async (c) => {
 	const { results } = await c.env.DB.prepare(`select score, user, timestamp from highscores order by score desc LIMIT 0, 10`).all();
