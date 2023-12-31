@@ -114,7 +114,7 @@ wsServer.on('connection', function(connection, request) {
 });
 
 function originIsAllowed(origin) {
-    return (origin == "http://localhost:3000");
+    return true; // (origin == "http://localhost:3000");
 }
 
 function doWork(conn, _data) {
