@@ -1026,10 +1026,10 @@ function saveScore() {
             type: "POST",
             async: true,
             cache: false,
-            data: {
+            data: JSON.stringify({
                 user: name,
                 score: SCORE
-            },
+            }),
             url: "https://supercurve-highscores.icebob-todo.workers.dev/highscores",
             dataType: "json",
             success: function(data) {
