@@ -1030,8 +1030,8 @@ function saveScore() {
                 user: name,
                 score: SCORE
             },
-            url: "http://supercurve.sds.hu/highscores.php",
-            dataType: "jsonp",
+            url: "https://supercurve-highscores.icebob-todo.workers.dev/highscores",
+            dataType: "json",
             success: function(data) {
                 if (data && data !== "") {
                     highscores = data;
@@ -1052,8 +1052,8 @@ function getHighScores() {
         type: "GET",
         async: true,
         cache: false,
-        url: "http://supercurve.sds.hu/highscores.php",
-        dataType: "jsonp",
+        url: "https://supercurve-highscores.icebob-todo.workers.dev/highscores",
+        dataType: "json",
         success: function(data) {
             if (data && data !== "") {
                 highscores = data;

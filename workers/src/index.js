@@ -17,8 +17,8 @@ app.post("/highscores", async (c) => {
 		.run();
 
 	if (success) {
-		c.status(201);
-		return c.text("Created");
+		const { results } = await c.env.DB.prepare(`select score, user, timestamp from highscores order by score desc LIMIT 0, 10`).all();
+		return c.json(results);
 	} else {
 		c.status(500);
 		return c.text("Something went wrong");
