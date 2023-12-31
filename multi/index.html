@@ -1,26 +1,22 @@
 <!doctype html> 
 <html>
-<head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# game: http://ogp.me/ns/game#">
+<head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="description" content="Supercurve is an HTML5 3D pong game." />
     <meta name="keywords" content="supercurve, curveball, html5, pong, game, multiplayer" />
     <meta name="robots" content="index, follow" />
     <meta name="author" content="Norbert Mereg" />
     
-    <meta property="fb:app_id"      content="272193096164738" /> 
-    <meta property="og:type"        content="game" /> 
-    <meta property="og:url"         content="http://supercurve.sds.hu/" /> 
-    <meta property="og:title"       content="SuperCurve HTML5 game" /> 
-    <meta property="og:description" content="Supercurve is an HTML5 3D pong game." /> 
-    <meta property="og:image"       content="http://supercurve.sds.hu/images/supercurve_ss_280.jpg" />     
-    <meta property="og:email"       content="norbi@mergesgomba.hu"/>
-    <title>SuperCurve</title>
+    <title>SuperCurve multiplayer game</title>
+    <base href="multi/" />
 
     <link rel="stylesheet" href="style.css" />
-    <script src="jquery-1.6.4.min.js" type="text/javascript"></script>
+    <script src="https://code.jquery.com/jquery-1.6.4.min.js" type="text/javascript"></script>
     <script src="globals.js" type="text/javascript"></script>
     <script src="common.js" type="text/javascript"></script>
+    <script src="countries.js" type="text/javascript"></script>
     <script src="levels.js" type="text/javascript"></script>
+    <script src="multiplayer.js" type="text/javascript"></script>
     <script src="supercurve.js" type="text/javascript"></script> 
 </head>
 <body>
@@ -47,17 +43,40 @@
         <source src="sounds/disappoint.mp3">
         <source src="sounds/disappoint.ogg">
     </audio>
+    <div id="userlist">
+        <div class="container">
+            <table id="userTable">
+                <thead>
+                    <th width="20px"></th>
+                    <th width="50%">Player name</th>
+                    <th width="20%">State</th>
+                    <th width="10%">FPS</th>
+                    <th width="20%">Country</th>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            
+        </div>
+    </div>
     <div>
         <div id="credits">
-            <b>SuperCurve v1.2 - single player version</b><br/>
+            <b>SuperCurve v1.2 - multi player version</b><br/>
             Written by Norbert Mereg<br/>
         </div>
         <div id="hotkeys">
             <b>M</b> - Sound on/off<br/>
-            <b>X</b> - Go to main menu<br/>
+            <b>P</b> - Game pause/resume<br/>
+            <b>X</b> - Go to lobby/menu<br/>
         </div>
     </div>
-    <div style="clear: both"></div>
-
+    <div id="chatwindow">
+        <div id="chatWindowContent">
+        </div>
+    	<div id='chatWindowInput'>
+		    <textarea onkeydown='return checkChatBoxInputKey(event);'></textarea>
+		</div>
+    </div>
+    <div style="clear: both"></div>    
 </body>
 </html>

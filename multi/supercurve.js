@@ -1,6 +1,7 @@
 /*************************************
- *            SuperCurve    
- *              v1.2
+ *        SuperCurve Multi
+ *              v1.0
+ *     http://supercurve.sds.hu
  * 
  *      Created: Norbert Mereg
  *  E-mail: mereg.norbert@gmail.com
@@ -11,16 +12,16 @@ function load()
     game_state = STATE_MAIN_MENU;
     
 	context.fillStyle = "white";
-	context.font = "bold 22pt Verdana";
+	context.font = "bold 26pt Verdana";
     context.fillText("Loading...",400,245);
     
 	lastDrawTime = new Date().getTime();
     ball = new Ball();   
-    comp = new Computer();
+    comp = new Opponent();
     
     img_bg = new Image();
     img_main = new Image();
-    img_main.src = "images/supercurve_main.png";
+    img_main.src = "images/supercurve_multi_main.png";
 
     img_sound_on = new Image();
     img_sound_on.src = "images/sound_on.png";
@@ -52,10 +53,14 @@ function load()
     sound_disappoint = document.getElementById('disappoint');
     sound_disappoint.volume = 0.3;    
 
-    preLoadImages(["images/supercurve_main.png", "images/ball.png", "images/sound_off.png", "images/sound_on.png", "images/ball.png", "images/ball_red.png"], function() {
-        mainTimer = setInterval(move, 1000/40);        
+    preLoadImages(["images/supercurve_multi_main.png", "images/ball.png", "images/sound_off.png", "images/sound_on.png", "images/ball.png", "images/ball_red.png"], function() {
         draw();
+//        mainTimer = setInterval(move, 1000/40);        
+        setTimeout(move, 1000/50);        
+        setTimeout(controlFPS, 1000/50);        
     });
+    
+    
 }
 
 function draw()
@@ -65,13 +70,15 @@ function draw()
     if (lastDrawTime)
     {
     	var dt = now - lastDrawTime;
-    	fps = 0.1*1000/dt + 0.9*fps;    
+        if (dt != 0)
+        	fps = 0.1*1000/dt + 0.9*fps;    
     }
     lastDrawTime = now;
     
+
     clearCanvas(false);
     
-    if (game_state == STATE_SUSPEND || game_state == STATE_RUN)
+    if ((game_state == STATE_SUSPEND || game_state == STATE_RUN) && !game_pause)
     {
         drawPad(comp.padX, comp.padY, DEPTH, false);
         ball.draw();
@@ -79,29 +86,44 @@ function draw()
         padPos = {x: mouse.x - LEFT, y: mouse.y - TOP};
         drawPad(padPos.x, padPos.y, 0, true);
     }
+    
+    context.shadowBlur = 0;
     drawInfobar();
     drawStateInfo();
-    drawLives();
     
     window.requestAnimFrame(draw);
 }
 
-function move() {
+function controlFPS() {
     //Eltelt időből FPS számítás
     var now = new Date().getTime();
     if (lastMoveTime)
     {
         var dt = now - lastMoveTime;
-    	moveFPS = 0.1*1000/dt + 0.9*moveFPS;    
+        if (dt != 0)
+            moveFPS = 0.1*1000/dt + 0.9*moveFPS;    
     }
+    if (moveFPS > fps)
+        moveFPS = fps;
     lastMoveTime = now;
+    
+    setTimeout(controlFPS, 1000/50);        
+}
 
+function move() {
 
     if (game_state == STATE_NEXT_LEVEL)
     {
-        if (Math.ceil(((new Date().getTime())-lastStateTime)/1000) > 2)
+        if (Math.ceil(((new Date().getTime()) - lastStateTime) / 1000) > 2)
             game_state = STATE_SUSPEND;
     }
+    
+    if (dev_mode == 1)
+    {
+        mouse.x = LEFT + (WIDTH) / 2; 
+        mouse.y = TOP + (HEIGHT) / 2; 
+    }
+    
     if (mouse.x < LEFT + PAD_WIDTH / 2) mouse.x = LEFT + PAD_WIDTH / 2;
     if (mouse.y < TOP + PAD_HEIGHT / 2) mouse.y = TOP + PAD_HEIGHT / 2;
     if (mouse.x > LEFT + WIDTH - PAD_WIDTH / 2) mouse.x = LEFT + WIDTH - PAD_WIDTH / 2;
@@ -116,6 +138,16 @@ function move() {
 
     ball.move();
     comp.tick();
+    
+    var newFPS = 50;
+    if (oppMoveFPS && oppMoveFPS > 0 && oppMoveFPS < 50)
+    {
+        if (ball.dz > 0)
+            newFPS = (oppMoveFPS - 2);        
+        else
+            newFPS = (oppMoveFPS + 2);        
+    }
+    setTimeout(move, 1000/newFPS);        
 }
 
 
@@ -144,6 +176,7 @@ function clearCanvas(force) {
             context.globalAlpha = 1;
         }
         context.lineWidth = 1;
+        context.shadowBlur = 8;
         
         context.beginPath();
         context.moveTo(LEFT, TOP);
@@ -169,17 +202,29 @@ function clearCanvas(force) {
         context.closePath();
         context.stroke();
         
-        context.font = "18px tektron, Comic Sans MS, Verdana";
+        
+        context.font = "18px tektron, Impact, Verdana";
         context.textAlign = "left";
         context.fillStyle = "#e3f5ff";
         context.shadowColor = "white";
         context.shadowBlur = 6;
         context.shadowOffsetX = 0;
         context.shadowOffsetY = 0;
-        context.fillText('Computer', LEFT , TOP + HEIGHT + 20); 
-        context.textAlign = "right";
-        context.fillText('Player', LEFT + WIDTH, TOP + HEIGHT + 20); 
         
+        context.fillText(username, LEFT + 25 , TOP + HEIGHT + 20); 
+        context.textAlign = "right";
+        context.fillText(oppName, LEFT + WIDTH - 25, TOP + HEIGHT + 20); 
+        
+        drawPoints();
+
+        context.shadowBlur = 0;
+
+        //draw flags
+        if (userFlag.loaded)
+            context.drawImage(userFlag, LEFT , TOP + HEIGHT + 10);
+        if (oppFlag.loaded)
+            context.drawImage(oppFlag, LEFT + WIDTH - 20 , TOP + HEIGHT + 10);
+
         context.shadowBlur = 0;
 
         $(img_bg).attr('src', canvas.toDataURL());
@@ -189,30 +234,30 @@ function clearCanvas(force) {
 }
 
 function drawInfobar() {
-    context.font = "35px tektron, Comic Sans MS, Verdana";
+
+    context.font = "35px tektron, Impact, Verdana";
     context.textAlign = "center";
     context.fillStyle = "#e3f5ff";
     context.shadowColor = "white";
     context.shadowBlur = 6;
     context.shadowOffsetX = 0;
     context.shadowOffsetY = 0;
-    //draw level
-    if (currentLevel)
-        context.fillText(pad(currentLevel.level, 2), 704, 130); 
-    else
-        context.fillText('--', 704, 130); 
+
+/*    context.fillText(pad(ROUND, 2), 704, 130); 
+
     //draw score
     if (SCORE - last_score > 100) 
         last_score += 10;
     else if (last_score < SCORE) last_score += 5;
     context.fillText(pad(last_score, 5), 704, 230); 
+*/    
     //draw time
     if (game_state == STATE_RUN)
     {
         elapsed_time = Math.ceil(((new Date().getTime())-START_TIME)/1000);
     }
     
-    context.fillText(timeToStr(), 704, 335); 
+    context.fillText(timeToStr(), 704, 140); 
 
     //draw bonus text
     if (bonus_message !== "")
@@ -246,8 +291,9 @@ function drawStateInfo() {
     var blur = 0;
     switch(game_state) {
         case STATE_MAIN_MENU: {
-            drawOverlay();            
-            context.font = "45px tektron, Comic Sans MS, Verdana";
+            drawOverlay();
+            
+            context.font = "45px tektron, Impact, Verdana";
             context.textAlign = "center";
             context.fillStyle = "#e3f5ff";
             context.shadowColor = "white";
@@ -261,107 +307,67 @@ function drawStateInfo() {
             else
                 context.fillStyle = "#325F8C";
             context.beginPath();
-            roundedRect(130, 140, 300, 40, 5);
-            context.closePath();
-            context.fill();
-            
-            context.fillStyle = "#e3f5ff";
-            context.font = "30px tektron, Comic Sans MS, Verdana";
-            context.fillText('Single player', 280, 170); 
-
-            if (hover_button == 2)
-                context.fillStyle = "#59c6fe";
-            else
-                context.fillStyle = "#325F8C";
-            context.beginPath();
             roundedRect(130, 200, 300, 40, 5);
             context.closePath();
             context.fill();
             
             context.fillStyle = "#e3f5ff";
-            context.font = "30px tektron, Comic Sans MS, Verdana";
-            context.fillText('Multi player', 280, 230); 
-
-            if (hover_button == 3)
-                context.fillStyle = "#59c6fe";
-            else
-                context.fillStyle = "#325F8C";
-            context.beginPath();
-            roundedRect(130, 260, 300, 40, 5);
-            context.closePath();
-            context.fill();
-            
-            context.fillStyle = "#e3f5ff";
-            context.font = "30px tektron, Comic Sans MS, Verdana";
-            context.fillText('High scores', 280, 290); 
+            context.font = "30px tektron, Impact, Verdana";
+            context.fillText('Login to lobby', 280, 230); 
 
             break;
         }
         case STATE_GAME_OVER: {
-            drawOverlay();            
-            context.font = "45px tektron, Comic Sans MS, Verdana";
+            drawOverlay();
+
+            context.font = "45px tektron, Impact, Verdana";
             context.textAlign = "center";
             context.fillStyle = "#e3f5ff";
             context.shadowColor = "white";
             context.shadowBlur = blur;
             context.shadowOffsetX = 0;
             context.shadowOffsetY = 0;
-            context.fillText('Game over', LEFT + WIDTH/2, 210); 
+            context.fillText('You lost', LEFT + WIDTH/2, 210); 
 
-            context.font = "30px tektron, Comic Sans MS, Verdana";
-            context.fillText(SCORE + ' points', LEFT + WIDTH/2, 280); 
+            context.font = "30px tektron, Impact, Verdana";
+            context.fillText(POINT_PLAYER + ' - ' + POINT_OPPONENT, LEFT + WIDTH/2, 280); 
+
+
+            //Play again button
+            if (hover_button == 10)
+                context.fillStyle = "#59c6fe";
+            else
+                context.fillStyle = "#325F8C";
+            context.beginPath();
+            roundedRect(50, 310, 200, 30, 5);
+            context.closePath();
+            context.fill();
             
-            break;
-        }
-        case STATE_HIGHSCORES: {
-            drawOverlay();            
-            context.font = "45px tektron, Comic Sans MS, Verdana";
-            context.textAlign = "center";
             context.fillStyle = "#e3f5ff";
-            context.shadowColor = "white";
-            context.shadowBlur = blur;
-            context.shadowOffsetX = 0;
-            context.shadowOffsetY = 0;
-            context.fillText('High scores', LEFT + WIDTH/2, 60); 
+            context.font = "20px tektron, Impact, Verdana";
+            context.fillText('Play again', 150, 330); 
 
-            context.font = "20px Comic Sans MS, Verdana";
-            var max = Math.min(10, highscores.length);
-            for(var i = 0; i < max; i++)
-            {
-                if (i == 0)
-                    context.font = "bold 24px Comic Sans MS, Verdana";
-                else if (i == 1)
-                    context.font = "bold 22px Comic Sans MS, Verdana";
-                else if (i == 2)
-                    context.font = "bold 20px Comic Sans MS, Verdana";
-                else
-                    context.font = "20px Comic Sans MS, Verdana";
-
+            //Back to lobby button
+            if (hover_button == 11)
+                context.fillStyle = "#59c6fe";
+            else
+                context.fillStyle = "#325F8C";
+            context.beginPath();
+            roundedRect(325, 310, 200, 30, 5);
+            context.closePath();
+            context.fill();
             
-                context.textAlign = "right";
-                context.fillText(highscores[i].score + " points", LEFT + WIDTH/2 - 10, 100 + i * 25); 
-                context.textAlign = "left";
-                context.fillText(highscores[i].user, LEFT + WIDTH/2 + 10, 100 + i * 25); 
-            }
-            
-            break;
-        }        
-        case STATE_NEXT_LEVEL: {
-            drawOverlay();            
-            context.font = "45px tektron, Comic Sans MS, Verdana";
-            context.textAlign = "center";
             context.fillStyle = "#e3f5ff";
-            context.shadowColor = "white";
-            context.shadowBlur = blur;
-            context.shadowOffsetX = 0;
-            context.shadowOffsetY = 0;
-            context.fillText(currentLevel.name, LEFT + WIDTH/2, 210); 
-            
+            context.font = "20px tektron, Impact, Verdana";
+            context.fillText('Back to lobby', 425, 330); 
+
+
             break;
         }
         case STATE_WIN: {
-            drawOverlay();            
-            context.font = "45px tektron, Comic Sans MS, Verdana";
+            drawOverlay();
+
+            context.font = "45px tektron, Impact, Verdana";
             context.textAlign = "center";
             context.fillStyle = "#e3f5ff";
             context.shadowColor = "white";
@@ -369,25 +375,149 @@ function drawStateInfo() {
             context.shadowOffsetX = 0;
             context.shadowOffsetY = 0;
             context.fillText('Congratulation!', LEFT + WIDTH/2, 160); 
-            context.font = "35px tektron, Comic Sans MS, Verdana";
+            context.font = "35px tektron, Impact, Verdana";
             context.fillText('You won!', LEFT + WIDTH/2, 230); 
-            context.font = "30px tektron, Comic Sans MS, Verdana";
-            context.fillText(SCORE + ' points', LEFT + WIDTH/2, 300); 
+            context.font = "30px tektron, Impact, Verdana";
+            context.fillText(POINT_PLAYER + ' - ' + POINT_OPPONENT, LEFT + WIDTH/2, 280); 
+            
+            //Play again button
+            if (hover_button == 10)
+                context.fillStyle = "#59c6fe";
+            else
+                context.fillStyle = "#325F8C";
+            context.beginPath();
+            roundedRect(50, 310, 200, 30, 5);
+            context.closePath();
+            context.fill();
+            
+            context.fillStyle = "#e3f5ff";
+            context.font = "20px tektron, Impact, Verdana";
+            context.fillText('Play again', 150, 330); 
+
+            //Back to lobby button
+            if (hover_button == 11)
+                context.fillStyle = "#59c6fe";
+            else
+                context.fillStyle = "#325F8C";
+            context.beginPath();
+            roundedRect(325, 310, 200, 30, 5);
+            context.closePath();
+            context.fill();
+            
+            context.fillStyle = "#e3f5ff";
+            context.font = "20px tektron, Impact, Verdana";
+            context.fillText('Back to lobby', 425, 330); 
+            
             
             break;
         }
+        case STATE_MULTI_RESPONSE: {
+            drawOverlay();
+
+            context.font = "45px tektron, Impact, Verdana";
+            context.textAlign = "center";
+            context.fillStyle = "#e3f5ff";
+            context.shadowColor = "white";
+            context.shadowBlur = blur;
+            context.shadowOffsetX = 0;
+            context.shadowOffsetY = 0;
+            context.fillText('Click to start', LEFT + WIDTH/2, 210); 
+            
+            break;
+        }
+        case STATE_MULTI_WAIT: {
+            drawOverlay();
+
+            context.font = "45px tektron, Impact, Verdana";
+            context.textAlign = "center";
+            context.fillStyle = "#e3f5ff";
+            context.shadowColor = "white";
+            context.shadowBlur = blur;
+            context.shadowOffsetX = 0;
+            context.shadowOffsetY = 0;
+            context.fillText('Waiting for ', LEFT + WIDTH/2, 210); 
+            context.fillText(oppName + '...', LEFT + WIDTH/2, 260); 
+            
+            break;
+        }        
+        case STATE_MULTI_MESSAGE: {
+            drawOverlay();
+
+            context.font = "32px tektron, Impact, Verdana";
+            context.textAlign = "center";
+            context.fillStyle = "#e3f5ff";
+            context.shadowColor = "white";
+            context.shadowBlur = blur;
+            context.shadowOffsetX = 0;
+            context.shadowOffsetY = 0;
+            context.fillText(game_message, LEFT + WIDTH/2, 210); 
+            
+            break;
+        }        
+        case STATE_ERROR: {
+            drawOverlay();
+
+            context.font = "30px tektron, Impact, Verdana";
+            context.textAlign = "center";
+            context.fillStyle = "#e3f5ff";
+            context.shadowColor = "white";
+            context.shadowBlur = blur;
+            context.shadowOffsetX = 0;
+            context.shadowOffsetY = 0;
+            context.fillText(game_message, LEFT + WIDTH/2, 210); 
+            
+            break;
+        }        
+        
+        case STATE_MULTI_DISCONNECT: {
+            drawOverlay();
+
+            context.font = "40px tektron, Impact, Verdana";
+            context.textAlign = "center";
+            context.fillStyle = "#e3f5ff";
+            context.shadowColor = "white";
+            context.shadowBlur = blur;
+            context.shadowOffsetX = 0;
+            context.shadowOffsetY = 0;
+            context.fillText('Server not found.', LEFT + WIDTH/2, 210); 
+            
+            break;
+        }
+        
+        case STATE_RUN: {
+            if (game_pause)
+            {
+                drawOverlay();
+    
+                context.font = "40px tektron, Impact, Verdana";
+                context.textAlign = "center";
+                context.fillStyle = "#e3f5ff";
+                context.shadowColor = "white";
+                context.shadowBlur = blur;
+                context.shadowOffsetX = 0;
+                context.shadowOffsetY = 0;
+                context.fillText('Pause', LEFT + WIDTH/2, 210); 
+            }
+            break;
+        }        
+        
     }
 }
 
-function drawLives() {
-    if (game_state == STATE_SUSPEND || game_state == STATE_RUN)
+function drawPoints() {
+    //if (game_state == STATE_SUSPEND || game_state == STATE_RUN)
     {
-        context.globalAlpa = 0.8;
-        for (var i = 0; i < comp_lives; i++)
-            context.drawImage(img_ball_red, LEFT + i * 20, TOP + HEIGHT + 28, 16, 16);    
-
-        for (var i = 0; i < player_lives; i++)
-            context.drawImage(img_ball, LEFT + WIDTH - 16 - i * 20, TOP + HEIGHT + 28, 16, 16);    
+        context.globalAlpa = 1;
+        context.font = "32px tektron, Impact, Verdana";
+        context.textAlign = "center";
+        context.fillStyle = "#e3f5ff";
+        context.shadowColor = "white";
+        context.shadowBlur = 6;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 0;
+        context.fillText(POINT_PLAYER + ' - ' + POINT_OPPONENT, LEFT + WIDTH/2, TOP + HEIGHT + 32); 
+        context.shadowBlur = 0;
+        
     }
 }
 
@@ -447,9 +577,9 @@ function drawPad(_x, _y, z, hasPlayer) {
 
 /* --------------------- Ball class ---------------------- */
 function Ball() {
-    this.radius = 30.0;
-    this.x = (WIDTH - this.radius) / 2;
-    this.y = (HEIGHT - this.radius) / 2;
+    this.radius = 40.0;
+    this.x = WIDTH/2 - this.radius;
+    this.y = HEIGHT/2 - this.radius;
     this.z = 0.0;
     this.lastmove = 0;
     this.pause = false;
@@ -501,13 +631,6 @@ function Ball() {
         this.velocity = currentLevel.speed;
         this.dz = oppStart?-this.velocity:this.velocity;
 
-        if (game_mode == 1)
-        {
-            //véletlen szerű legyen a kezdés
-            this.dx = (Math.random() * 2) - 0.5;
-            this.dy = (Math.random() * 2) - 0.5;
-        }
-        
         this.lastmove = new Date().getTime();
     };
     
@@ -519,15 +642,15 @@ function Ball() {
         this.curveX = 0.0;
         this.curveY = 0.0;
 
-        this.x = (WIDTH - this.radius) / 2;
-        this.y = (HEIGHT - this.radius) / 2;
+        this.x = WIDTH/2 - this.radius;
+        this.y = HEIGHT/2 - this.radius;
         this.z = 0.0;
     }
     
     this.move = function() {
         if (game_state != STATE_RUN) return;
     
-        if (!this.pause)
+        if (!this.pause && !game_pause)
         {
             if (Math.abs(this.curveX) > 0.001)
                 this.curveX /= CURVE_DECAY;
@@ -595,52 +718,42 @@ function Ball() {
         
         if (this.z > DEPTH) //ellenfél gólterület
         {
-            if (game_mode == 1)
+            if (oppInfo.hitID == hitID)
             {
-                //single game
-                if (hitTest(false))
+                //console.log('Opponent HIT: ' + hitID);
+                if (lag_time)
                 {
-                    bonus(BONUS_NONE); //clear text
-                    
-                    comp.padSpeedX *= 2;
-                    comp.padSpeedY *= 2;
+                    var now = new Date().getTime();
+                    console.log('LAG: ' + (now - lag_time)/1000);
+                    lag_time = null;
+                }
 
-                    this.curveX = comp.padSpeedX / currentLevel.curve.amount;
-                    this.curveY = -comp.padSpeedY / currentLevel.curve.amount;
+                this.pause = false;
+                if (oppInfo.success)
+                {
+                    this.curveX = -oppInfo.curveX;
+                    this.curveY = oppInfo.curveY;
+                    comp.padX = oppInfo.hitX;
+                    comp.padY = oppInfo.hitY;                        
+                    this.dx = -oppInfo.speedX,
+                    this.dy = oppInfo.speedY,
+                    this.dz = -this.dz;
+                    this.z = DEPTH;
                     play(sound_padhit);
-                } else {
-                    //Gép meghal
+                } else 
+                {
+                    //Ellenfél meghal
                     die(false);
                     return;
                 }
-                this.dz = -this.dz;
-                this.z = DEPTH;
-            } else { 
-                //multi
-                if (oppInfo.hitID == hitID)
+            } else {
+                //várakozás, mert még nem jött meg hogy mit ütött
+                if (!this.pause)
                 {
-                    this.pause = false;
-                    if (oppInfo.success)
-                    {
-                        this.curveX = -oppInfo.curveX;
-                        this.curveY = oppInfo.curveY;
-                        comp.padX = oppInfo.hitX;
-                        comp.padY = oppInfo.hitY;                        
-                        this.dx = -oppInfo.speedX,
-                        this.dy = oppInfo.speedY,
-                        this.dz = -this.dz;
-                        this.z = DEPTH;
-                        play(sound_padhit);
-                    } else 
-                    {
-                        //Ellenfél meghal
-                        die(false);
-                        return;
-                    }
-                } else {
-                    //várakozás, mert még nem jött meg hogy mit ütött
-                    this.pause = true;
+                    lag_time = new Date().getTime();
                 }
+                
+                this.pause = true;
             }
         }
         if (this.z <= 0) //saját gólterület
@@ -652,25 +765,22 @@ function Ball() {
                 this.curveX = -padSpeedX / currentLevel.curve.amount;
                 this.curveY = padSpeedY / currentLevel.curve.amount;
                 play(sound_padhit2);
-                //console.log('X: ' + this.curveX + ' Y: ' + this.curveY);
                 
-                if (game_mode == 2) // multi
-                {
-                    if (isHost)
-                        hitID++;    
-                    sendTick(TICK_HIT, {
-                        hitid: hitID,
-                        x: padPos.x,
-                        y: padPos.y,        
-                        success: true,
-                        curveX: this.curveX,
-                        curveY: this.curveY,
-                        speedX: this.dx,
-                        speedY: this.dy
-                    });
-                    if (!isHost)
-                        hitID++;    
-                }
+                if (IS_SERVE)
+                    hitID++;    
+                sendTick(TICK_HIT, {
+                    hitid: hitID,
+                    x: padPos.x,
+                    y: padPos.y,        
+                    success: true,
+                    curveX: this.curveX,
+                    curveY: this.curveY,
+                    speedX: this.dx,
+                    speedY: this.dy
+                });
+                //console.log('Pad HIT: ' + hitID);
+                if (!IS_SERVE)
+                    hitID++;    
                 
                 bonus(BONUS_NONE); //clear text
                 if (hitTest(true, true))
@@ -742,8 +852,8 @@ function bonus(type, point) {
             break;
         }
         case BONUS_ACCURACY: bonus_message = "Accuracy bonus +" + ACCURACY_SCORE + "!"; break;
-        case BONUS_TIME: bonus_message = "Time bonus +" + point + "!"; break;
-        case BONUS_LIFE: bonus_message = "Life bonus +" + point + "!"; break;
+        //case BONUS_TIME: bonus_message = "Time bonus +" + point + "!"; break;
+        //case BONUS_LIFE: bonus_message = "Life bonus +" + point + "!"; break;
     }
     if (curve_combo >= 3)
     {
@@ -793,31 +903,46 @@ function hitTest(hasPlayer, acc) {
     
 }
 
+function serveBall() {
+    var x = ROUND % (MAX_SERVE*2);
+    var evenRound = (x > 0 && x <= MAX_SERVE);
+    if ((isHost && evenRound) || (!isHost && !evenRound))
+    {
+        IS_SERVE = true;
+        ball.dz = this.velocity;
+        ball.z = 0;
+    } else {
+        IS_SERVE = false;
+        ball.dz = -this.velocity;
+        ball.z = DEPTH;
+    }
+}
+
 function startGame() {
     SCORE = 0;
+    ROUND = 1;
+    POINT_PLAYER = 0;
+    POINT_OPPONENT = 0;
     last_score = 0;
+    game_pause = false;
     elapsed_time = 0;
     curve_combo = 0;
     bonus_message = "";
-    player_lives = MAX_PLAYER_LIVES;
-    comp_lives = MAX_COMP_LIVES;
-    levelIndex = 0;
+    
+    //get country flags
+    var u = getUser(userid);
+    if (u)
+        userFlag.src = 'images/flags/' + u.countryCode.toLowerCase() + '.png';
+    var u = getUser(oppid);
+    if (u)
+        oppFlag.src = 'images/flags/' + u.countryCode.toLowerCase() + '.png';
+    
     clearCanvas(true);
     ball.stop();
-    
-    if (game_mode == 2)
-    {
-        if (!isHost)
-        {
-            ball.dz = -this.velocity;
-            ball.z = DEPTH;
-        }
-    
-        currentLevel = LEVELS[0];
-        game_state = STATE_SUSPEND;
-    }
-    else
-        nextLevel();
+    serveBall();
+
+    currentLevel = LEVELS[0];
+    game_state = STATE_SUSPEND;
 }
 
 function nextLevel() {
@@ -825,7 +950,7 @@ function nextLevel() {
         game_state = STATE_WIN;    
     } else {
         curve_combo = 0;
-        /*player_lives = MAX_PLAYER_LIVES;*/
+        player_lives = MAX_PLAYER_LIVES;
         comp_lives = MAX_COMP_LIVES;
     
         currentLevel = LEVELS[++levelIndex - 1];
@@ -844,23 +969,21 @@ function start() {
     curve_combo = 0;
     elapsed_time = 0;
     
-    if (game_mode == 2)
+    hitID = 1;
+    if (IS_SERVE)
     {
-        hitID = 1;
-        if (isHost)
-        {
-            sendTick(TICK_HIT, {
-                hitid: hitID,
-                x: padPos.x,
-                y: padPos.y,        
-                success: true,
-                curvex: 0,
-                curvey: 0
-            });
-        }
-        ball.start(!isHost);
-    } else
-        ball.start(false);
+        sendTick(TICK_HIT, {
+            hitid: hitID,
+            x: padPos.x,
+            y: padPos.y,        
+            success: true,
+            curveX: 0,
+            curveY: 0,
+            speedX: 0,
+            speedY: 0
+        });
+    }
+    ball.start(!IS_SERVE);
         
     comp.start();
     $("canvas").css("cursor", "none");
@@ -870,42 +993,28 @@ function die(player) {
     game_state = STATE_SUSPEND;
     last_score = SCORE;
     bonus_message = "";
+    ROUND++;
     ball.stop();
     comp.stop();
     if (player)
     {
-        player_lives--;
+        POINT_OPPONENT++;
         play(sound_disappoint);
-        if (game_mode == 2)
-        {
-            if (isHost)
-                hitID++;    
+
+        if (IS_SERVE)
+            hitID++;    
+    
+        sendTick(TICK_LOST, {
+            hitid: hitID,
+            x: padPos.x,
+            y: padPos.y
+        });
+        bonus_message = "Fail!";
         
-            sendTick(TICK_LOST, {
-                hitid: hitID,
-                x: padPos.x,
-                y: padPos.y
-            });
-        
-            if (game_mode == 2 && !isHost)
-            {
-                ball.dz = -this.velocity;
-                ball.z = DEPTH;
-            }
-        } else {
-            POINT_COMP++;
-        }
-        
-        if (game_mode == 1 && player_lives < 1)
-        {
-            game_state = STATE_GAME_OVER;
-        } else
-            bonus_message = "Fail";
     }
     else
     {
         POINT_PLAYER++;
-        comp_lives--;
         play(sound_applause);
         
         //time bonus
@@ -915,37 +1024,29 @@ function die(player) {
             bonus(BONUS_TIME, point);
             SCORE += point;            
         }
+        bonus_message = "Goal!";
 
-        if (game_mode == 1 && comp_lives < 1)
-        {
-            var point = player_lives * LIFE_SCORE;
-            bonus(BONUS_LIFE, point);
-            SCORE += point;
-            if (player_lives < MAX_PLAYER_LIVES)
-                player_lives++;
-
-            nextLevel();
-        }
-        
-        if (game_mode == 2 && !isHost) {
-            ball.dz = -this.velocity;
-            ball.z = DEPTH;
-        }
     }
-    if (game_mode == 2)
-        oppInfo = {};
+    if (POINT_PLAYER >= MAX_POINT || POINT_OPPONENT >= MAX_POINT)
+    {
+        if (POINT_PLAYER > POINT_OPPONENT)
+            game_state = STATE_WIN;
+        else
+            game_state = STATE_GAME_OVER;
+    }
+    serveBall();
+    oppInfo = {};
     $("canvas").css("cursor", "default");
+    clearCanvas(true);
 }
 
 
-/* --------------------- Computer class ---------------------- */
-function Computer() {
+/* --------------------- Opponent class ---------------------- */
+function Opponent() {
     this.padX = WIDTH / 2; 
     this.padY = HEIGHT / 2; 
     this.oldX = this.padX;
     this.oldY = this.padY;
-    this.padSpeedX = 0.0;
-    this.padSpeedY = 0.0;
     this.lastmove = 0;
         
     this.start = function() {
@@ -959,107 +1060,11 @@ function Computer() {
     };
     
     this.tick = function() {
-        if (game_state == STATE_RUN && game_mode == 1) {
-            this.oldX = this.padX;
-            this.oldY = this.padY;
-            
-            var dX = 0.0;
-            var dY = 0.0;
-            var skill = 0.0;
-            if (ball.dz > 0)
-            {
-                //Ha felé megy a labda, akkor pozícionáljon
-                if (ball.z/DEPTH > 0.2)
-                {
-                    dX = (ball.x + ball.radius) - this.padX;
-                    dY = (ball.y + ball.radius) - this.padY;
-                    skill = currentLevel.skillFactor;
-                }
-            } else {
-                //Ha tőle elfele megy a labda, akkor álljon be középre
-                dX = (WIDTH / 2) - this.padX;
-                dY = (HEIGHT / 2) - this.padY;
-                skill = currentLevel.skillFactor;
-            }
-            if (Math.abs(dX) > 0)
-            {
-                this.padX += dX / skill;
-                //this.padX += sign(dX) * 5;
-            }
-            if (Math.abs(dY) > 0)
-            {
-                this.padY += dY / skill;
-                //this.padY += sign(dY) * 5;
-            }
-            
-            //Ellenőrizni nem csúszott-e túl
-            if (this.padX < PAD_WIDTH / 2)
-                this.padX = PAD_WIDTH / 2;
-            if (this.padX > WIDTH - PAD_WIDTH / 2)
-                this.padX = WIDTH - PAD_WIDTH / 2;
-
-            if (this.padY < PAD_HEIGHT / 2)
-                this.padY = PAD_HEIGHT / 2;
-            if (this.padY > HEIGHT - PAD_HEIGHT / 2)
-                this.padY = HEIGHT - PAD_HEIGHT / 2;
-                
-            this.padSpeedX = this.padX - this.oldX;
-            this.padSpeedY = this.padY - this.oldY;
-        } else if (game_mode == 2){
-            if (oppInfo !== null) {
-                this.padX = oppInfo.paddleX;
-                this.padY = oppInfo.paddleY;
-            }
+        if (oppInfo !== null) {
+            this.padX = WIDTH - oppInfo.paddleX;
+            this.padY = oppInfo.paddleY;
         }
     };
-}
-
-function saveScore() {
-    game_state = STATE_SAVE_SCORE;
-
-    var name = getStorage('username', "Player " + Math.ceil(Math.random() * 1000));
-    name = prompt("Please enter your name", name);
-    if (name != null && name != "")
-    {
-        putStorage('username', name);
-        $.ajax({
-            type: "GET",
-            async: true,
-            cache: false,
-            data: {
-                user: name,
-                score: SCORE
-            },
-            url: "http://supercurve.sds.hu/highscores.php",
-            dataType: "jsonp",
-            success: function(data) {
-                if (data && data !== "") {
-                    highscores = data;
-                    game_state = STATE_HIGHSCORES;
-                }    
-            },
-            error: function() {
-                game_state = STATE_MAIN_MENU;
-            }
-        });        
-            
-    } else 
-        game_state = STATE_MAIN_MENU;
-}
-
-function getHighScores() {
-    $.ajax({
-        type: "GET",
-        async: true,
-        cache: false,
-        url: "http://supercurve.sds.hu/highscores.php",
-        dataType: "jsonp",
-        success: function(data) {
-            if (data && data !== "") {
-                highscores = data;
-            }    
-        }
-    });        
 }
 
 /* --------------------- UI events ---------------------- */
@@ -1073,14 +1078,6 @@ $(document).ready(function() {
         document.onmousedown = MouseClickHandler;
         document.onmousemove = MouseMoveHandler;
         document.onkeydown = KeyHandler;
-		
-        //Touch handler
-        document.addEventListener("touchmove", function(event) {
-            if (event.targetTouches.length > 0 && (game_state == STATE_SUSPEND || game_state == STATE_RUN))
-                MouseMoveHandler(event.targetTouches[0]);        
-                event.preventDefault();
-        });		
-
         canvas.focus(); 
         
         window.requestAnimFrame = (function(callback){
@@ -1093,8 +1090,16 @@ $(document).ready(function() {
                 window.setTimeout(callback, 1000 / 60);
             };
         })();        
-    
-        load();
+        
+        if (window.MozWebSocket) //Firefox support
+        {
+            window.WebSocket = window.MozWebSocket;
+        }
+        
+        if (typeof(WebSocket) === "undefined")
+            alert("Oh no, you need a browser that supports WebSockets.");
+        else        
+            load();
     }
 });
 
@@ -1102,35 +1107,39 @@ function MouseClickHandler(e) {
     mouse.x = getCursorX(e);
     mouse.y = getCursorY(e);
 
-    if (game_state == STATE_MAIN_MENU && ptInRect(mouse, {left: 130, top: 140, width: 300, height: 40}))
+/*    if (game_state == STATE_MAIN_MENU && ptInRect(mouse, {left: 130, top: 140, width: 300, height: 40}))
     {
-        game_mode = 1;
-        startGame();
-    } else if (game_state == STATE_MAIN_MENU && ptInRect(mouse, {left: 130, top: 200, width: 300, height: 40}))
+        game_state = STATE_MULTI_LOBBY;
+        connect();
+    } else*/ if (game_state == STATE_MAIN_MENU && ptInRect(mouse, {left: 130, top: 200, width: 300, height: 40}))
     {
-        window.location = "/multi";
-    } else if (game_state == STATE_MAIN_MENU && ptInRect(mouse, {left: 130, top: 260, width: 300, height: 40}))
-    {
-        getHighScores();
-        game_state = STATE_HIGHSCORES;
+        game_state = STATE_MULTI_LOBBY;
+        connect();
     } else if (ptInRect(mouse, {left: 740, top: 450, width: 45, height: 45}))
     {
         mute = 1 - mute;
     } else if (game_state == STATE_SUSPEND && hitTest(true)) 
     {
-        if (game_mode == 1)
+        if (IS_SERVE)
             start();
-        else if (game_mode == 2 && isHost)
-            start();
-    } else if (game_state == STATE_GAME_OVER || game_state == STATE_WIN) 
+    } else if ((game_state == STATE_GAME_OVER || game_state == STATE_WIN)  && ptInRect(mouse,  {left: 50, top: 310, width: 200, height: 30}))
     {
-        if (SCORE > 0)
-            saveScore();
-        else
-            game_state = STATE_MAIN_MENU;
-    } else if (game_state == STATE_HIGHSCORES) 
+        playAgain();
+    } else if ((game_state == STATE_GAME_OVER || game_state == STATE_WIN)  && ptInRect(mouse,  {left: 325, top: 310, width: 200, height: 30}))
+    {
+        gotoLobby(true);
+    } else if ((game_state == STATE_HIGHSCORES || game_state == STATE_MULTI_DISCONNECT)  && ptInRect(mouse, {left: LEFT, top: TOP, width: WIDTH, height: HEIGHT}))
     {
         game_state = STATE_MAIN_MENU;
+    } else if ((game_state == STATE_MULTI_RESPONSE)  && ptInRect(mouse, {left: LEFT, top: TOP, width: WIDTH, height: HEIGHT}))
+    {
+        sendTick(TICK_ROUND_READY);
+        game_state = STATE_MULTI_WAIT;
+        
+    } else if ((game_state == STATE_ERROR)  && ptInRect(mouse, {left: LEFT, top: TOP, width: WIDTH, height: HEIGHT}))
+    {
+        if (error_callback)
+            error_callback();
     }
 }
 
@@ -1138,12 +1147,14 @@ function MouseMoveHandler(e) {
     mouse.x = getCursorX(e);
     mouse.y = getCursorY(e);
     
-    if (ptInRect(mouse, {left: 130, top: 140, width: 300, height: 40}))
+/*    if (ptInRect(mouse, {left: 130, top: 140, width: 300, height: 40}))
         hover_button = 1;
-    else if (ptInRect(mouse, {left: 130, top: 200, width: 300, height: 40}))
-        hover_button = 2;
-    else if (ptInRect(mouse, {left: 130, top: 260, width: 300, height: 40}))
-        hover_button = 3;
+    else*/ if (ptInRect(mouse, {left: 130, top: 200, width: 300, height: 40}))
+        hover_button = 1;
+    else if (ptInRect(mouse, {left: 50, top: 310, width: 200, height: 30}))
+        hover_button = 10;
+    else if (ptInRect(mouse, {left: 325, top: 310, width: 200, height: 30}))
+        hover_button = 11;
     else
         hover_button = 0;
 }
@@ -1151,23 +1162,18 @@ function MouseMoveHandler(e) {
 function KeyHandler(e) {
     e = window.event ? window.event : e; // Considering IE
     var key = (e.charCode) ? e.charCode : ((e.keyCode) ? e.keyCode : ((e.which) ? e.which : 0));
-    if (key == 77) { //M
+    if (key == 77 && !isChatFocus()) { //M
         mute = 1 - mute;
-    }
-    else if (key == 76) { 
-        nextLevel();
-    }
-    else if (key == 73) {
-        player_lives++;
-    } else if (key == 88 && (game_state == STATE_RUN || game_state == STATE_SUSPEND)) { //X
+    } else if (key == 80 && !isChatFocus()) { //P
+        togglePause();
+    } else if (key == 81 && !isChatFocus() && e.ctrlKey && e.shiftKey) { //Q
+        dev_mode = 1 - dev_mode;
+    } else if (key == 88 && !isChatFocus() && (game_state == STATE_RUN || game_state == STATE_SUSPEND || game_state == STATE_MULTI_WAIT || game_state == STATE_MULTI_RESPONSE)) { //X
+        togglePause();
         if (confirm('Do you want to quit?'))
-        {
-            ball.stop();
-            comp.stop();
-            $("canvas").css("cursor", "default");
-
-            game_state = STATE_MAIN_MENU;
-        }
+            gotoLobby(true, username + " quit");
+        else
+            togglePause();
     }
 }
         
