@@ -1108,7 +1108,7 @@ function MouseClickHandler(e) {
         startGame();
     } else if (game_state == STATE_MAIN_MENU && ptInRect(mouse, {left: 130, top: 200, width: 300, height: 40}))
     {
-        window.location = "/multi";
+        window.location = window.location.href + "multi";
     } else if (game_state == STATE_MAIN_MENU && ptInRect(mouse, {left: 130, top: 260, width: 300, height: 40}))
     {
         getHighScores();
