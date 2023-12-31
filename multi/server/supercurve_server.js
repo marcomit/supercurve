@@ -365,7 +365,7 @@ function processData(pack) {
                         send(oppUser, {
                             type: TICK_GO_LOBBY,
                             data: {
-                                message: oppUser.name + " has rejected."
+                                message: user.name + " has rejected."
                             }
                         });                    
                     }
