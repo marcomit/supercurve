@@ -1,2 +1,9 @@
-# supercurve
-SuperCurve game
+# SuperCurve
+
+It's a 3D-style pong game written in pure Javascript.
+
+# Contact
+
+Copyright (C) 2024 Icebob
+
+[![@icebob](https://img.shields.io/badge/github-icebob-green.svg)](https://github.com/icebob) [![@icebob](https://img.shields.io/badge/twitter-Icebobcsi-blue.svg)](https://twitter.com/Icebobcsi)
