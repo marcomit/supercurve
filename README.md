@@ -2,6 +2,8 @@
 
 It's a 3D-style pong game written in pure Javascript.
 
+![](multi/images/supercurve_ss_280.jpg)
+
 # Contact
 
 Copyright (C) 2024 Icebob
