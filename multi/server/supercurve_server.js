@@ -51,7 +51,7 @@ var USER_WAIT_ACCEPT        = 2;
 var USER_PLAYING            = 3;
 var USER_WAIT_AGAIN         = 4;
 
-var MAX_USERS = 30;
+var MAX_USERS = 100;
 var USER_ID = 1;
 var users = [];
 
@@ -146,6 +146,7 @@ function RegisterUser(conn, data)
 {
     if (users.length >= MAX_USERS)
     {
+        console.log((new Date()) + " Server is full (" + users.length + ")");
         var resp = {
             type: TICK_ERROR,
             data: {
@@ -154,7 +155,7 @@ function RegisterUser(conn, data)
             }
         };
         conn.send(JSON.stringify(resp));
-        exit;
+        return;
     }
     
     if (data.name)
@@ -493,6 +494,7 @@ function newGame(hostPlayer, oppPlayer) {
     send(hostPlayer, pack);
     send(oppPlayer, pack);
     
+    console.log((new Date()) + ` New game started between ${hostPlayer.name} and ${oppPlayer.name}`);
     // saveToDB(TICK_NEW_GAME, hostPlayer, oppPlayer);
 }
 
