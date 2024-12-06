@@ -822,7 +822,8 @@ function startGame() {
 
 function nextLevel() {
     if (levelIndex == LEVELS.length) {
-        game_state = STATE_WIN;    
+      // game_state = STATE_WIN;
+      LEVELS = generateLevels(LEVELS.length + 1);
     } else {
         curve_combo = 0;
         /*player_lives = MAX_PLAYER_LIVES;*/

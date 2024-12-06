@@ -138,3 +138,44 @@ function getCursorY(e) {
     y -= canvas.offsetTop;
     return y;
 }
+
+function generateLevels(totalLevels) {
+  const levels = [];
+
+  for (let i = 1; i <= totalLevels; i++) {
+    const baseSpeed = 1.5;
+    const speedIncrement = 0.15;
+    const baseSkillFactor = 10;
+    const skillFactorDecrement = 0.5;
+    const baseCurveAmount = 20;
+    const curveDecrement = 1;
+    const basePadWidth = 120;
+    const basePadHeight = 80;
+    const padDecrement = 10;
+
+    levels.push({
+      level: i,
+      name: `Level ${i}`,
+      curve: {
+        amount: Math.max(baseCurveAmount - (i - 1) * curveDecrement, 10), // Minimum curve amount is 10
+      },
+      skillFactor: Math.max(
+        baseSkillFactor - (i - 1) * skillFactorDecrement,
+        2.5
+      ), // Minimum skill factor is 2.5
+      speed: baseSpeed + (i - 1) * speedIncrement, // Increment speed
+      ...(i >= 3 && {
+        padWidth: Math.max(
+          basePadWidth - Math.floor(((i - 3) * padDecrement) / 2),
+          80
+        ), // Minimum width is 80
+        padHeight: Math.max(
+          basePadHeight - Math.floor(((i - 3) * padDecrement) / 2),
+          50
+        ), // Minimum height is 50
+      }),
+    });
+  }
+
+  return levels;
+}
